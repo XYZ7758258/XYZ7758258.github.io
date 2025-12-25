@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可交互圣诞树</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+        }
+        .info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        .controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        button {
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">Merry Christmas</div>
+    <div class="controls">
+        <button id="addPhoto">添加照片</button>
+        <button id="reset">重置</button>
+    </div>
+    <input type="file" id="photoInput" accept="image/*" style="display: none;">
+    <script>
+        // 初始化场景、相机、渲染器
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 轨道控制器
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // 生成粒子数量
+        const particleCount = 5000;
+        const particles = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+
+        // 圣诞树形状参数
+        const radius = 1.5;
+        const baseRadius = 2.5;
+        const height = 4;
+        const subdivisions = 5;
+
+        // 生成圣诞树形状的粒子
+        for (let i = 0; i < particleCount; i++) {
+            const t = Math.random() * Math.PI;
+            const r = baseRadius * (1 - t / Math.PI) + radius * (t / Math.PI);
+            const theta = Math.random() * 2 * Math.PI;
+            const y = height * (t / Math.PI) - height / 2;
+
+            positions[i * 3] = r * Math.cos(theta);
+            positions[i * 3 + 1] = y;
+            positions[i * 3 + 2] = r * Math.sin(theta);
+
+            // 颜色：金色系
+            const gold = Math.random() * 0.5 + 0.5;
+            colors[i * 3] = gold;
+            colors[i * 3 + 1] = gold * 0.8 + 0.2;
+            colors[i * 3 + 2] = Math.random() * 0.3;
+        }
+
+        particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        // 粒子材质
+        const material = new THREE.PointsMaterial({
+            size: 0.08,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.9
+        });
+
+        const particleSystem = new THREE.Points(particles, material);
+        scene.add(particleSystem);
+
+        // 添加顶部装饰
+        const topGeometry = new THREE.SphereGeometry(0.15);
+        const topMaterial = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+        const top = new THREE.Mesh(topGeometry, topMaterial);
+        top.position.y = height / 2 - 0.1;
+        scene.add(top);
+
+        // 照片对象数组
+        const photos = [];
+
+        // 添加照片函数
+        function addPhoto(file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const texture = new THREE.TextureLoader().load(event.target.result);
+                const geometry = new THREE.PlaneGeometry(0.5, 0.3);
+                const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+                const photo = new THREE.Mesh(geometry, material);
+                photo.position.set(
+                    (Math.random() - 0.5) * 3,
+                    (Math.random() - 0.5) * 2,
+                    (Math.random() - 0.5) * 3
+                );
+                scene.add(photo);
+                photos.push(photo);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 重置函数
+        function reset() {
+            photos.forEach(photo => scene.remove(photo));
+            photos.length = 0;
+        }
+
+        // 事件监听
+        document.getElementById('addPhoto').addEventListener('click', function() {
+            document.getElementById('photoInput').click();
+        });
+
+        document.getElementById('photoInput').addEventListener('change', function(event) {
+            i
